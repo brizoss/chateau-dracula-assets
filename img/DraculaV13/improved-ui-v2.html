@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Le Château de Dracula - Interface Améliorée</title>
+  <style>
+  
+    /* Reset & Bases */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: #000;
+      font-family: "Georgia", serif;
+      color: #ccc;
+      line-height: 1.5;
+    }
+    /* Layout */
+    #ui-container {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      grid-template-rows: auto 1fr;
+      grid-template-areas:
+        "header header"
+        "content sidebar";
+      min-height: 100vh;
+      background-color: #111;
+    }
+    .game-header {
+      grid-area: header;
+      background-color: #1a0000;
+      border-bottom: 2px solid #600;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .game-content {
+      grid-area: content;
+      position: relative;
+      overflow-y: auto;
+      padding: 0;
+      height: calc(100vh - 82px);
+    }
+    #locations-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      opacity: 0.4;
+      z-index: 0;
+      transition: opacity 0.8s ease, background-image 1s ease;
+    }
+    .content-wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      margin: 40px auto;
+      background-color: rgba(10, 0, 0, 0.65);
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 25px rgba(255,0,0,0.35);
+      color: #e0e0e0;
+    }
+    .game-sidebar {
+      grid-area: sidebar;
+      background-color: #1a0000;
+      border-left: 2px solid #600;
+      padding: 20px;
+      overflow-y: auto;
+      height: calc(100vh - 82px);
+    }
+    /* Header */
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    #player-portrait {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      background-color: #300;
+      border: 2px solid #900;
+      background-size: cover;
+      background-position: center;
+      flex-shrink: 0;
+    }
+    .player-stats { display: flex; flex-direction: column; gap: 5px; }
+    #character-name { font-size: 1.1rem; color: #f44; margin-bottom: 2px; font-weight: bold; }
+    .health-container { font-size: 0.9rem; color: #ccc; }
+    .health-container span { font-weight: bold; color: #fff; }
+    .stats-line { font-size: 0.85rem; color: #aaa; }
+    .stats-line span { margin-right: 10px; }
+    .stats-line span span { color: #fff; font-weight: bold; margin-left: 2px; }
+    .header-buttons { display: flex; gap: 10px; }
+    .header-button {
+      background-color: #400;
+      color: #fff;
+      border: 1px solid #600;
+      border-radius: 4px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.1s;
+      font-size: 0.9rem;
+      font-family: "Georgia", serif;
+    }
+    .header-button:hover { background-color: #600; }
+    .header-button:active { transform: scale(0.95); }
+    /* Content Text Styling */
+    .locations-title {
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+      color: #ff4444;
+      text-shadow: 2px 2px 4px #000;
+      border-bottom: 2px solid #600;
+      padding-bottom: 10px;
+    }
+    .locations-description {
+      font-size: 1.1rem;
+      line-height: 1.7;
+      margin-bottom: 30px;
+      text-align: justify;
+    }
+    /* Choices Styling */
+    .choices-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .choice, .choice-button {
+      background: linear-gradient(to bottom, #600, #300);
+      color: #fff;
+      border: 1px solid #800;
+      border-radius: 5px;
+      padding: 12px 18px;
+      font-size: 1rem;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+    }
+    .choice:hover, .choice-button:hover {
+      background: linear-gradient(to bottom, #800, #500);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(128, 0, 0, 0.5);
+    }
+    .choice:disabled, .choice-button:disabled,
+    .choice.disabled, .choice-button.disabled {
+      background: linear-gradient(to bottom, #444, #222);
+      color: #888;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      border-color: #555;
+    }
+    .choice-text { font-weight: normal; }
+    .requirement {
+      font-size: 0.8em;
+      color: #aaa;
+      margin-top: 5px;
+      font-style: italic;
+    }
+    /* Sidebar */
+    .sidebar-section {
+      background-color: rgba(48, 0, 0, 0.7);
+      border: 1px solid #600;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .sidebar-section h3 {
+      background-color: #600;
+      margin: 0;
+      padding: 10px 15px;
+      font-size: 1.1rem;
+      color: #fff;
+      font-variant: small-caps;
+      letter-spacing: 1px;
+    }
+    .sidebar-section-content {
+      padding: 15px;
+      font-size: 0.95rem;
+    }
+    .sidebar-section-content ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    .sidebar-section-content li {
+      margin-bottom: 8px;
+      padding: 4px 0;
+      cursor: default;
+      transition: color 0.2s;
+      border-bottom: 1px solid rgba(128, 0, 0, 0.2);
+    }
+    .sidebar-section-content li:last-child {
+      border-bottom: none;
+    }
+    .sidebar-section-content li[data-tooltip]:hover {
+      color: #ff8888;
+      cursor: help;
+    }
+    #visited-locations li {
+      cursor: pointer;
+    }
+    #visited-locations li:hover {
+      color: #ff8888;
+      text-decoration: underline;
+    }
+    /* Tooltip Style */
+    [data-tooltip] {
+      position: relative;
+    }
+    [data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 100%;
+      top: 50%;
+      transform: translateY(-50%) translateX(10px);
+      background-color: rgba(0,0,0,0.9);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      white-space: nowrap;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
+      pointer-events: none;
+    }
+    [data-tooltip]:hover::after {
+      opacity: 1;
+      visibility: visible;
+    }
+	/* Pour conserver les retours à la ligne dans vos textes */
+    #locations-description {
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="ui-container">
+    <!-- Entête -->
+    <header class="game-header">
+      <div class="header-left">
+        <div id="player-portrait"></div>
+        <div class="player-stats">
+          <div id="character-name">Chargement...</div>
+          <div class="health-container">
+            Santé: <span id="health-value">...</span> / <span id="max-health-value">...</span>
+          </div>
+          <div class="stats-line">
+            <span>RAP: <span id="stat-rapidite">...</span></span>
+            <span>COU: <span id="stat-courage">...</span></span>
+            <span>FOR: <span id="stat-force">...</span></span>
+            <span>HAB: <span id="stat-habilete">...</span></span>
+            <span>PSI: <span id="stat-psi">...</span>/<span id="stat-psiMax">...</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="header-buttons">
+        <button id="save-button" class="header-button">Sauvegarder</button>
+        <button id="load-button" class="header-button">Charger</button>
+        <button id="audio-toggle" class="header-button">Son</button>
+        <button id="back-to-creation" class="header-button">Retour Création</button>
+      </div>
+    </header>
+
+    <!-- Contenu principal -->
+    <main class="game-content">
+      <div id="locations-background"></div>
+      <div class="content-wrapper">
+        <h2 id="locations-title">Chargement...</h2>
+        <p id="locations-description">Chargement en cours...</p>
+        <div id="choices-container" class="choices-grid"></div>
+      </div>
+    </main>
+
+    <!-- Sidebar -->
+    <aside class="game-sidebar">
+      <div class="sidebar-section" id="inventory-section">
+        <h3>Inventaire</h3>
+        <div class="sidebar-section-content">
+          <ul id="player-inventory">
+            <li>Aucun objet</li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3>Effets Actifs</h3>
+        <div class="sidebar-section-content">
+          <ul id="active-effects">
+            <li>Aucun effet</li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3>Lieux Visités</h3>
+        <div class="sidebar-section-content">
+          <ul id="visited-locations">
+            <li>Aucun lieu</li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Script principal -->
+  <script>
+    // ===== Ajout de la variable gameData avec les lieux et éléments demandés =====
+    window.gameData = {
+      locations: {
+        'campanile-ruine': {
+          title: "Campanile en ruine",
+          description: "Une clairière abrite les vestiges d’un campanile frappé par la foudre...",
+          background: "https://exemple.com/img/campanile.jpg",
+          choices: [
+            { text: "Explorer l’intérieur", destination: "interieur-campanile" },
+            { text: "Retourner sur vos pas", destination: "sentier-est" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'interieur-campanile': {
+          title: "Intérieur du campanile",
+          description: "Les murs sont lézardés et recouverts de lierre...",
+          background: "https://exemple.com/img/interieur-campanile.jpg",
+          choices: [
+            { text: "Revenir à l’extérieur", destination: "campanile-ruine" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'boudoir-mortuaire': {
+          title: "Boudoir mortuaire",
+          description: "Une pièce élégante et raffinée, pleine de parfums...",
+          background: "https://exemple.com/img/boudoir.jpg",
+          choices: [
+            { text: "Examiner les cercueils", destination: "examiner-cercueils" },
+            { text: "Revenir dans le couloir", destination: "couloir-superieur" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'chapelle-chateau': {
+          title: "Chapelle du Château",
+          description: "Une ravissante chapelle parfumée d’encens...",
+          background: "https://exemple.com/img/chapelle.jpg",
+          choices: [
+            { text: "S’approcher de l’autel", destination: "examiner-autel" },
+            { text: "Retourner dans le couloir", destination: "couloir-superieur" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'dedale-necrophages': {
+          title: "Dédale des Nécrophages",
+          description: "Un réseau de tunnels creusés à même la terre...",
+          background: "https://exemple.com/img/dedale.jpg",
+          choices: [
+            { text: "Explorer un tunnel au hasard", destination: "explorer-dedale" },
+            { text: "Tenter de revenir sur ses pas", destination: "crypte-dracula" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'cabinet-cire': {
+          title: "Cabinet des Figures de cire",
+          description: "Cet endroit est empli de mannequins d’un réalisme glaçant...",
+          background: "https://exemple.com/img/cabinet-cire.jpg",
+          choices: [
+            { text: "Examiner les mannequins", destination: "examiner-mannequins" },
+            { text: "Inspecter le chaudron de cire", destination: "examiner-chaudron" },
+            { text: "Retourner sur vos pas", destination: "galerie-est" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'portail': {
+          title: "Portail du Château",
+          description: "Vous êtes devant les hautes grilles de fer forgé du Château de Dracula...",
+          background: "https://raw.githubusercontent.com/brizoss/chateau-dracula-assets/4212d6845a41c07b62959c93f1031dfb97680410/img/porte_du_chateau1.jpg",
+          choices: [
+            { text: "Prendre l'allée vers le nord", destination: "allee" },
+            { text: "Examiner les alentours", destination: "examiner-portail" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'allee': {
+          title: "Allée du Château",
+          description: "L'allée carrossable qui relie le portail à la cour d'honneur...",
+          background: "https://raw.githubusercontent.com/brizoss/chateau-dracula-assets/4212d6845a41c07b62959c93f1031dfb97680410/img/allée_du_chateau4.jpg",
+          choices: [
+            { text: "Continuer vers le nord", destination: "cour-honneur" },
+            { text: "Explorer le sentier à l'ouest", destination: "sentier-ouest" },
+            { text: "Explorer le sentier à l'est", destination: "sentier-est" },
+            { text: "Retourner au portail", destination: "portail" },
+            { text: "Rechercher un passage secret", action: "bibliotheque" }
+          ]
+        },
+        'cour-honneur': {
+          title: "Cour d'honneur",
+          description: "Une étroite cour pavée, dominée par la sombre masse du Château.",
+          choices: [
+            { text: "Aller vers la porte du Château (nord)", destination: "porte-chateau" },
+            { text: "Descendre vers le jardin (est)", destination: "jardin-contrebas" },
+            { text: "Visiter les dépendances (ouest)", destination: "dependances" },
+            { text: "Emprunter le passage voûté (nord-ouest)", destination: "cour-ecuries" },
+            { text: "Retourner vers l'allée (sud)", destination: "allee" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'porte-chateau': {
+          title: "Porte d'entrée du Château",
+          description: "La grande porte du Château, ornée de gros clous de bronze...",
+          choices: [
+            { text: "Frapper à la porte", destination: "frapper-porte" },
+            { text: "Tenter d'ouvrir la porte", destination: "ouvrir-porte" },
+            { text: "Retourner dans la cour d'honneur", destination: "cour-honneur" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'cimetiere': {
+          title: "Cimetière familial",
+          description: "Des pierres tombales se dressent tout autour...",
+          choices: [
+            { text: "Examiner les pierres tombales", destination: "examiner-tombes" },
+            { text: "Explorer le caveau au sud-ouest", destination: "caveau-famille" },
+            { text: "Retourner à l'allée (est)", destination: "allee" },
+            { text: "Prendre le sentier vers le nord", destination: "sentier-nord" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'crypte-dracula': {
+          title: "Crypte de Dracula",
+          description: `
+		  
+		 Votre état de comte mort vivant vous soumet à certaines règles
+particulières. 
+
+Les voici :
+1) Chaque fois que vous passerez d'un paragraphe à un autre, vous
+perdrez 2 POINTS DE VIE, contrairement à la plupart des autres héros qui,
+eux, gagnent des POINTS DE VIE lorsqu'ils abordent un nouveau
+paragraphe.
+
+
+2) Ni les MEDICAMENTS ni le TRAITEMENT NATUREL n'auront d'effet sur
+vous. Votre seule et unique manière de récupérer des POINTS DE VIE
+consiste à boire le sang de vos victimes, ce qui ne peut se produire qu'au
+cours d'un combat. Lorsque vous obtiendrez 6 ou 12 en lançant les dés,
+vous gagnerez autant de POINTS DE VIE qu'en possédera à ce moment-là
+votre adversaire, le total ne pouvant jamais dépasser 100. (Cette
+opération ne retire rien à votre adversaire, en dehors de la pénalité
+normale occasionnée par la blessure et déterminée par les dés.)
+
+
+3) Vos facultés PSI sont les suivantes :
+a) Domination des Petits Animaux ;
+b) Téléportation ;
+c) Transmutation.
+
+La Domination des Petits Animaux est utile si vous êtes agressé par un
+animal plus petit qu'un être humain (rat, chien, chat, etc.). Au prix de la
+perte de 1 point d'énergie PSI (ou de 20 POINTS DE VIE équivalents), vous
+pouvez neutraliser l'attaque d'un ou de plusieurs animaux. Le sacrifice
+d'un deuxième point PSI convaincra la créature de combattre désormais
+pour votre compte.
+
+Mais si vous avez asservi un animal de cette manière,
+chaque combat ultérieur vous obligera à lancer deux dés pour savoir s'il
+va ou non se retourner contre vous. Il vous faudra obtenir un chiffre
+supérieur à 4 pour que la créature combatte à vos côtés. Si vous obtenez
+4 ou moins, elle s'alliera à votre adversaire pour vous combattre. (Dans
+ce cas, vous pourrez évidemment neutraliser son attaque en faisant à
+nouveau appel à votre PSI.
+
+La Téléportation doit obligatoirement être utilisée pour sortir de votre crypte et peut vous servir à y rentrer tant que
+vous n'aurez pas découvert le passage secret. La Téléportation vous
+permet, au cours de votre aventure, de rejoindre directement votre
+crypte à tout moment, sauf pendant un combat. Dans la pratique, son
+utilisation vous amène au 5, Lieu 35.
+
+La Transmutation vous permet d'adopter temporairement, durant un
+combat, la forme d'une chauve-souris. Sous cet aspect, vous êtes
+beaucoup plus difficile à atteindre, et votre adversaire devra obtenir 8 ou
+plus pour y parvenir. En revanche, vous êtes infiniment moins
+vigoureux, et votre total de FORCE sera provisoirement réduit à 1 (ce qui
+aura son influence sur le calcul des dommages que vous infligerez à votre
+adversaire). Reprendre votre forme humaine vous coûtera 1 point de PSI.
+Portes secrètes
+
+A l'intérieur du Château, vous aurez le droit d'ajouter 2 points au chiffre
+donné par les dés lorsque vous chercherez un passage secret. A
+l'extérieur du Château, les lieux vous étant moins familiers, vous ne
+pouvez majorer ce chiffre que de 1 point. Si votre tentative est couronnée
+de succès, vous serez autorisé à consulter le Tableau des Passages
+secrets à la page 213.
+Et maintenant, rendez-vous au 5 pour commencer votre aventure.`,
+
+          background: "https://fluffy-kashata-47db51.netlify.app/img/crypte.jpg",
+          choices: [
+            { text: "Utiliser Téléportation (coûte 1 PSI)", destination: "teleport-options", requiredCharacter: "dracula" },
+            { text: "Examiner le sarcophage", destination: "examiner-sarcophage" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'jardin-contrebas': {
+          title: "Jardin en contrebas",
+          description: "Un jardin envahi par des végétaux toxiques...",
+          choices: [
+            { text: "Cueillir des plantes", destination: "cueillir-plantes" },
+            { text: "Remonter vers la cour d'honneur", destination: "cour-honneur" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'caveau-famille': {
+          title: "Caveau de famille",
+          description: "Un petit caveau dissimulé derrière une grille en fer forgé.",
+          choices: [
+            { text: "Ouvrir la grille et entrer", destination: "combat-zombie" },
+            { text: "Retourner au cimetière", destination: "cimetiere" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'vestibule': {
+          title: "Vestibule",
+          description: "Le vestibule du Château, décoré de torches...",
+          choices: [
+            { text: "Ouvrir la porte à deux battants", destination: "galerie-ouest" },
+            { text: "Examiner la table", destination: "examiner-table-vestibule" },
+            { text: "Retourner vers la porte d'entrée", destination: "porte-chateau" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'galerie-ouest': {
+          title: "Galerie (partie ouest)",
+          description: "Un long couloir traversant le Château...",
+          choices: [
+            { text: "Aller vers la galerie est", destination: "galerie-est" },
+            { text: "Prendre l'escalier en colimaçon", destination: "couloir-superieur" },
+            { text: "Ouvrir la porte nord", destination: "fumoir" },
+            { text: "Retourner vers le vestibule (porte sud)", destination: "vestibule" },
+            { text: "Emprunter le passage étroit (est)", destination: "salle-musique" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'galerie-est': {
+          title: "Galerie (partie est)",
+          description: "Une galerie menant à des pièces secondaires...",
+          choices: [
+            { text: "Aller vers la bibliothèque", destination: "bibliotheque" },
+            { text: "Retourner vers la galerie ouest", destination: "galerie-ouest" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'fumoir': {
+          title: "Fumoir",
+          description: "Une pièce ornée d'une cheminée imposante...",
+          choices: [
+            { text: "Examiner la vitrine d'armes", destination: "examiner-vitrine" },
+            { text: "Aller vers la porte ouest", destination: "salle-manger" },
+            { text: "Aller vers la porte sud", destination: "galerie-ouest" },
+            { text: "Aller vers la porte est", destination: "salon" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'salle-musique': {
+          title: "Salle de musique",
+          description: "Une pièce étroite avec un piano à queue...",
+          choices: [
+            { text: "Examiner le piano", destination: "examiner-piano" },
+            { text: "Aller vers la porte nord du mur ouest", destination: "salon" },
+            { text: "Aller vers la porte sud du mur ouest", destination: "galerie-ouest" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'jardin-clos': {
+          title: "Jardin clos",
+          description: "Un jardin fermé et mystérieux...",
+          choices: [
+            { text: "Retourner à la crypte", destination: "crypte-dracula" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'cour-interieure': {
+          title: "Cour intérieure",
+          description: "Une cour cachée à l'intérieur du Château...",
+          choices: [
+            { text: "Explorer la cour", destination: "vestibule" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'cuisine': {
+          title: "Cuisine",
+          description: "Une cuisine animée, emplie d'ustensiles anciens...",
+          choices: [
+            { text: "Examiner les ustensiles", destination: "examiner-cuisine" },
+            { text: "Retourner au fumoir", destination: "fumoir" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'bibliotheque': {
+          title: "Bibliothèque",
+          description: "Cette pièce est à la fois une bibliothèque et un bureau...",
+          background: "https://fluffy-kashata-47db51.netlify.app/img/bibliotheque",
+          choices: [
+            { text: "Examiner les livres", destination: "examiner-bibliotheque" },
+            { text: "Retourner à la galerie est", destination: "galerie-est" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'salle-manger': {
+          title: "Salle à manger",
+          description: "Une grande salle à manger avec une table imposante...",
+          choices: [
+            { text: "Examiner la table", destination: "examiner-table-manger" },
+            { text: "Retourner au fumoir", destination: "fumoir" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'salon': {
+          title: "Salon",
+          description: "Un salon élégant avec des fauteuils confortables...",
+          choices: [
+            { text: "Discuter avec les invités", destination: "examiner-salon" },
+            { text: "Retourner à la salle de musique", destination: "salle-musique" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'cour-ecuries': {
+          title: "Cour des écuries",
+          description: "Une cour imprégnée de l'odeur du foin...",
+          choices: [
+            { text: "Explorer les écuries", destination: "examiner-ecuries" },
+            { text: "Retourner à la cour d'honneur", destination: "cour-honneur" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'chemin-ronde': {
+          title: "Chemin Ronde",
+          description: "Un chemin sinueux traversant des parties isolées...",
+          choices: [
+            { text: "Continuer sur le chemin", destination: "examiner-chemin" },
+            { text: "Retourner au couloir supérieur", destination: "couloir-superieur" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'antre-pretre': {
+          title: "Antre du Prêtre",
+          description: "Un recoin sombre où réside un prêtre oublié...",
+          choices: [
+            { text: "Approcher le prêtre", destination: "examiner-pretre" },
+            { text: "Retourner à la crypte", destination: "crypte-dracula" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        },
+        'galerie-glaces': {
+          title: "Galerie des Glaces",
+          description: "Une galerie ornée de miroirs anciens...",
+          choices: [
+            { text: "Regarder dans les miroirs", destination: "examiner-glaces" },
+            { text: "Retourner à la salle de musique", destination: "salle-musique" },
+            { text: "Rechercher un passage secret", action: "searchSecret" }
+          ]
+        }
+      },
+      narratives: {
+        /* Exemples de narrations supplémentaires */
+        'examiner-cercueils': {
+          text: "Vous vous penchez sur les cercueils : ils semblent vides…",
+          choices: [
+            { text: "Retourner dans le boudoir", destination: "boudoir-mortuaire" }
+          ]
+        },
+        'examiner-autel': {
+          text: "L’autel est orné de symboles religieux puissants...",
+          choices: [
+            { text: "Prendre le flacon et retourner à la chapelle", destination: "chapelle-chateau" }
+          ],
+          itemGained: { name: "Parfum sacré", type: "potion", effect: { type: "repel-undead", value: 3 }, singleUse: true }
+        },
+        'explorer-dedale': {
+          text: "Les tunnels se ressemblent tous...",
+          choices: [
+            { text: "Continuer malgré tout", destination: "dedale-necrophages" },
+            { text: "Faire demi-tour", destination: "crypte-dracula" }
+          ]
+        },
+        'examiner-mannequins': {
+          text: "En vous approchant, vous réalisez à quel point chaque scène semble figée...",
+          choices: [
+            { text: "Examiner le chaudron de cire", destination: "examiner-chaudron" },
+            { text: "Retourner au Cabinet", destination: "cabinet-cire" }
+          ]
+        },
+        'examiner-chaudron': {
+          text: "La cire fond lentement. Quelque chose brille au fond...",
+          choices: [
+            { text: "Prendre la clé et retourner au Cabinet", destination: "cabinet-cire" }
+          ],
+          itemGained: { name: "Clé n°7", type: "key", number: 7 }
+        },
+        'examiner-portail': {
+          text: "Vous examinez attentivement les grilles...",
+          choices: [
+            { text: "Pousser la grille et prendre l'allée", destination: "allee" },
+            { text: "Retourner sur la route", destination: "portail" }
+          ]
+        },
+        'examiner-tombes': {
+          text: "Vous examinez les pierres tombales...",
+          choices: [
+            { text: "Retourner au cimetière", destination: "cimetiere" }
+          ]
+        },
+        'examiner-sarcophage': {
+          text: "Le sarcophage contient un cercueil d'ébène...",
+          choices: [
+            { text: "Retourner à la crypte", destination: "crypte-dracula" }
+          ],
+          requiredCharacter: "dracula"
+        },
+        'teleport-options': {
+          text: "Où souhaitez-vous vous téléporter ?",
+          choices: [
+            { text: "Salle de musique", destination: "salle-musique" },
+            { text: "Jardin clos", destination: "jardin-clos" },
+            { text: "Cour intérieure", destination: "cour-interieure" },
+            { text: "Annuler", destination: "crypte-dracula" }
+          ]
+        },
+        'frapper-porte': {
+          text: "Vous frappez à la porte. Un silence oppressant s'installe.",
+          choices: [
+            { text: "Tenter d'ouvrir la porte", destination: "ouvrir-porte" },
+            { text: "Retourner dans la cour d'honneur", destination: "cour-honneur" }
+          ]
+        },
+        'ouvrir-porte': {
+          text: "La porte s'ouvre lentement en grinçant...",
+          choices: [
+            { text: "Entrer dans le château", destination: "vestibule" }
+          ]
+        },
+        'cueillir-plantes': {
+          text: "Vous cueillez quelques plantes aux propriétés médicinales...",
+          choices: [
+            { text: "Retourner au jardin", destination: "jardin-contrebas" }
+          ],
+          itemGained: { name: "Plantes médicinales", type: "potion", effect: { type: "health", value: 20 }, singleUse: true }
+        },
+        'examiner-piano': {
+          text: "Vous vous approchez du piano à queue...",
+          choices: [
+            { text: "Examiner le compartiment", destination: "compartiment-piano" },
+            { text: "Retourner à la salle de musique", destination: "salle-musique" }
+          ]
+        },
+        'jouer-piano': {
+          text: "Vous jouez quelques notes hésitantes...",
+          choices: [
+            { text: "Examiner le compartiment", destination: "compartiment-piano" },
+            { text: "Retourner à la salle de musique", destination: "salle-musique" }
+          ]
+        },
+        'compartiment-piano': {
+          text: "Dans le compartiment, vous trouvez une petite clé en argent...",
+          choices: [
+            { text: "Prendre la clé et retourner à la salle de musique", destination: "salle-musique" }
+          ],
+          itemGained: { name: "Clé n°3", type: "key", number: 3 }
+        },
+        'examiner-vitrine': {
+          text: "La vitrine expose plusieurs armes anciennes...",
+          choices: [
+            { text: "Prendre le poignard", destination: "prendre-poignard" },
+            { text: "Retourner au fumoir", destination: "fumoir" }
+          ]
+        },
+        'prendre-poignard': {
+          text: "Vous prenez le poignard orné...",
+          choices: [
+            { text: "Retourner au fumoir", destination: "fumoir" }
+          ],
+          itemGained: { name: "Poignard orné", type: "weapon", damage: 5 }
+        }
+      },
+      enemies: {
+        'zombie': {
+          name: "Zombie",
+          health: 25,
+          maxHealth: 25,
+          stats: { rapidite: 1, courage: 6, force: 3, habilete: 2, psi: 0 },
+          specialEffects: [
+            { trigger: "roll", value: [11, 12], effect: "mycose", damage: 5 }
+          ],
+          loot: { name: "Élixir de Régénération", type: "potion", effect: { type: "health", value: 50 }, singleUse: true }
+        },
+        'loup': {
+          name: "Loup",
+          health: 25,
+          maxHealth: 25,
+          stats: { rapidite: 5, courage: 5, force: 4, habilete: 5, psi: 0 }
+        },
+        'chauve-souris-vampire': {
+          name: "Chauve-souris vampire",
+          health: 10,
+          maxHealth: 10,
+          stats: { rapidite: 4, courage: 3, force: 2, habilete: 1, psi: 0 }
+        },
+        'main-diable': {
+          name: "Main du Diable",
+          health: 44,
+          maxHealth: 44,
+          stats: { rapidite: 6, courage: 6, force: 6, habilete: 6, psi: 0 },
+          specialEffects: [
+            { trigger: "roll", value: [3, 6, 9, 12], effect: "strangulation", damage: 10 }
+          ]
+        },
+        'fille-dracula': {
+          name: "Fille de Dracula",
+          health: 25,
+          maxHealth: 25,
+          stats: { rapidite: 4, courage: 5, force: 2, habilete: 3, psi: 2 },
+          specialEffects: [
+            { trigger: "roll", value: [5, 6], effect: "rayon-refrigerant", damage: "half" }
+          ]
+        },
+        'van-helsing': {
+          name: "Dr. Abraham van Helsing",
+          health: 100,
+          maxHealth: 100,
+          stats: { rapidite: 4, courage: 6, force: 3, habilete: 5, psi: 6 },
+          specialEffects: [
+            { trigger: "psi", effect: "foudre", damage: 20, condition: "roll-6" },
+            { trigger: "psi", effect: "caducee", heal: true },
+            { trigger: "psi", effect: "souleve-coeur", skipTurn: true },
+            { trigger: "psi", effect: "empaleur", damage: 5, extraCondition: "double-6-death" }
+          ]
+        }
+      },
+      randomEvents: [
+        {
+          name: "Tonnerre",
+          description: "Un violent coup de tonnerre retentit...",
+          effect: function() { /* Effet atmosphérique */ },
+          probability: 0.1
+        },
+        {
+          name: "Grincement",
+          description: "Un grincement inquiétant se fait entendre...",
+          effect: function() { /* Effet atmosphérique */ },
+          probability: 0.15
+        },
+        {
+          name: "Chauve-souris",
+          description: "Une chauve-souris traverse soudainement la pièce...",
+          effect: function() { /* Effet atmosphérique */ },
+          probability: 0.1
+        },
+        {
+          name: "Chuchotements",
+          description: "Des chuchotements semblent émaner des murs...",
+          effect: function() { /* Effet atmosphérique */ },
+          probability: 0.08
+        },
+        {
+          name: "Hurlement de loup",
+          description: "Au loin, un loup hurle à la lune...",
+          effect: function() { /* Effet atmosphérique */ },
+          probability: 0.12
+        }
+      ],
+      secretPassages: {
+        "portail": "cour-honneur",
+        "allee": "cimetiere",
+        "cour-honneur": "jardin-clos",
+        "cimetiere": "caveau-famille",
+        "vestibule": "crypte-dracula",
+        "galerie-ouest": "cuisine",
+        "galerie-est": "bibliotheque",
+        "fumoir": "salle-manger",
+        "salon": "galerie-est",
+        "cour-ecuries": "verger",
+        "jardin-contrebas": "cour-honneur",
+        "couloir-superieur": "chemin-ronde",
+        "crypte-dracula": "antre-pretre",
+        "salle-musique": "galerie-glaces",
+        "salle-manger": "cuisine"
+      },
+      items: {
+        "pieu": {
+          name: "Pieu en bois de pommier",
+          description: "Un pieu taillé dans du bois de pommier...",
+          type: "weapon",
+          damage: 10,
+          specialEffect: { type: "vampire-kill", condition: "double-6" }
+        },
+        "crucifix": {
+          name: "Crucifix en argent",
+          description: "Un crucifix en argent béni...",
+          type: "protection",
+          effect: { type: "reduce-damage", value: 5, againstType: "undead" }
+        },
+        "ail": {
+          name: "Gousse d'ail",
+          description: "Une gousse d'ail fraîche qui repousse les vampires.",
+          type: "protection",
+          effect: { type: "repel", againstType: "vampire" }
+        },
+        "eau-benite": {
+          name: "Fiole d'eau bénite",
+          description: "Une petite fiole d'eau bénite...",
+          type: "weapon",
+          damage: 15,
+          singleUse: true,
+          validTargets: ["undead", "vampire"]
+        },
+        "elixir-nostradamus": {
+          name: "Panacée de Nostradamus",
+          description: "Un liquide mystérieux créé par le célèbre prophète...",
+          type: "potion",
+          effect: { type: "health", value: "full" },
+          singleUse: true
+        },
+        "cle-cuivre": {
+          name: "Clé en cuivre",
+          description: "Une ancienne clé en cuivre.",
+          type: "key"
+        },
+        "cle-argent": {
+          name: "Clé en argent",
+          description: "Une clé finement ciselée en argent.",
+          type: "key"
+        },
+        "cle-or": {
+          name: "Clé en or",
+          description: "Une clé magnifiquement ciselée en or pur.",
+          type: "key"
+        }
+      },
+      numberedKeys: {
+        1: "chambre-1",
+        2: "chambre-2",
+        3: "chambre-3",
+        4: "chambre-4",
+        5: "chambre-5",
+        6: "chambre-6",
+        7: "chambre-7",
+        8: "chambre-8",
+        9: "chambre-9",
+        10: "chambre-10",
+        11: "chambre-11",
+        12: "chambre-12"
+      }
+    };
+
+    /* Gestion de l'état du jeu */
+    function loadGameState() {
+      try {
+        const savedState = localStorage.getItem('chateauDraculaState');
+        if (savedState) {
+          window.gameState = JSON.parse(savedState);
+          console.log("État du jeu chargé:", window.gameState);
+          return true;
+        } else {
+          console.warn("Aucun état de jeu trouvé");
+          return false;
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement de l'état:", error);
+        return false;
+      }
+    }
+    function saveGameState() {
+      if (!window.gameState) {
+        console.error("Impossible de sauvegarder: gameState n'existe pas");
+        return false;
+      }
+      try {
+        localStorage.setItem('chateauDraculaState', JSON.stringify(window.gameState));
+        console.log("État du jeu sauvegardé avec succès");
+        return true;
+      } catch (error) {
+        console.error("Erreur lors de la sauvegarde:", error);
+        return false;
+      }
+    }
+    function hasItem(itemId) {
+      if (!window.gameState || !window.gameState.inventory) return false;
+      return window.gameState.inventory.some(item => {
+        if (typeof item === 'string') return item === itemId;
+        if (typeof item === 'object') return item.id === itemId || item.name === itemId;
+        return false;
+      });
+    }
+
+    /* Mise à jour de l'interface */
+    // ===== Correction pour mettre à jour le nom et le portrait selon le personnage =====
+    function updateCharacterDisplay() {
+      if (!window.gameState || !window.gameState.character) {
+        console.warn("Impossible de mettre à jour l'affichage du personnage: données manquantes");
+        return;
+      }
+      const charNameElement = document.getElementById('character-name');
+      const portraitElement = document.getElementById('player-portrait');
+
+      // Détermine le nom du personnage
+      if (charNameElement) {
+        let displayedName = "Nom inconnu";
+        if (window.gameState.character === "jonathan") {
+          displayedName = "Jonathan Harker";
+        } else if (window.gameState.character === "dracula") {
+          displayedName = "Comte Dracula";
+        }
+        charNameElement.textContent = displayedName;
+      }
+
+      // Détermine l'URL du portrait
+      if (portraitElement) {
+        let portraitUrl = "";
+        if (window.gameState.character === "jonathan") {
+          portraitUrl = "https://raw.githubusercontent.com/brizoss/chateau-dracula-assets/f98913b21c18fe694f78179011c1655ccba1fc4c/img/jonathan_harker_portrait.png";
+        } else if (window.gameState.character === "dracula") {
+          portraitUrl = "https://raw.githubusercontent.com/brizoss/chateau-dracula-assets/a4b296d8cc1c3309159f33e810b303513ca2ce4d/img/chauve-souris.png";
+        }
+        if (portraitUrl) {
+          portraitElement.style.backgroundImage = `url('${portraitUrl}')`;
+        }
+      }
+    }
+
+    function updateStatsDisplay() {
+      if (!window.gameState || !window.gameState.stats) {
+        console.warn("Données de statistiques manquantes");
+        return;
+      }
+      const stats = ['rapidite', 'courage', 'force', 'habilete', 'psi'];
+      stats.forEach(stat => {
+        const element = document.getElementById(`stat-${stat}`);
+        if (element && window.gameState.stats[stat] !== undefined) {
+          element.textContent = window.gameState.stats[stat];
+        }
+      });
+      const healthElement = document.getElementById('health-value');
+      const maxHealthElement = document.getElementById('max-health-value');
+      if (healthElement && window.gameState.stats.health !== undefined) {
+        healthElement.textContent = window.gameState.stats.health;
+      }
+      if (maxHealthElement && window.gameState.stats.maxHealth !== undefined) {
+        maxHealthElement.textContent = window.gameState.stats.maxHealth;
+      }
+      const psiMaxElement = document.getElementById('stat-psiMax');
+      if (psiMaxElement && window.gameState.stats.psiMax !== undefined) {
+        psiMaxElement.textContent = window.gameState.stats.psiMax;
+      }
+    }
+    function updateInventoryDisplay() {
+      if (!window.gameState) {
+        console.warn("Données d'inventaire manquantes");
+        return;
+      }
+      const inventoryList = document.getElementById('player-inventory');
+      if (!inventoryList) return;
+      inventoryList.innerHTML = '';
+      if (!window.gameState.inventory || window.gameState.inventory.length === 0) {
+        const emptyItem = document.createElement('li');
+        emptyItem.textContent = 'Aucun objet';
+        inventoryList.appendChild(emptyItem);
+        return;
+      }
+      window.gameState.inventory.forEach(item => {
+        const listItem = document.createElement('li');
+        if (typeof item === 'string') {
+          listItem.textContent = item;
+          // Recherche d'éventuelle description dans gameData
+          if (window.gameData && window.gameData.items && window.gameData.items[item]) {
+            const info = window.gameData.items[item];
+            listItem.textContent = info.name || item;
+            if (info.description) {
+              listItem.setAttribute('data-tooltip', info.description);
+            }
+          }
+        } else if (typeof item === 'object') {
+          listItem.textContent = item.name || 'Objet inconnu';
+          if (item.description) {
+            listItem.setAttribute('data-tooltip', item.description);
+          }
+        }
+        inventoryList.appendChild(listItem);
+      });
+    }
+    function updateVisitedLocationsDisplay() {
+      if (!window.gameState) {
+        console.warn("Données de lieux visités manquantes");
+        return;
+      }
+      const visitedList = document.getElementById('visited-locations');
+      if (!visitedList) return;
+      visitedList.innerHTML = '';
+      if (!window.gameState.visitedLocations || window.gameState.visitedLocations.length === 0) {
+        const emptyItem = document.createElement('li');
+        emptyItem.textContent = 'Aucun lieu';
+        visitedList.appendChild(emptyItem);
+        return;
+      }
+      window.gameState.visitedLocations.forEach(locationId => {
+        const listItem = document.createElement('li');
+        // On peut récupérer le titre du lieu depuis gameData
+        let locationTitle = locationId;
+        if (window.gameData && window.gameData.locations && window.gameData.locations[locationId]) {
+          locationTitle = window.gameData.locations[locationId].title || locationId;
+        }
+        listItem.textContent = locationTitle;
+        listItem.style.cursor = 'pointer';
+        listItem.onclick = () => loadLocation(locationId);
+        visitedList.appendChild(listItem);
+      });
+    }
+
+    function loadLocation(locationId) {
+      console.log(`Chargement de la location: ${locationId}`);
+      if (!window.gameData || !window.gameData.locations) {
+        console.error("Impossible de charger la location: gameData non disponible");
+        return;
+      }
+      const locationData = window.gameData.locations[locationId];
+      if (!locationData) {
+        console.error(`Location "${locationId}" non trouvée dans gameData`);
+        return;
+      }
+      const titleElement = document.getElementById('locations-title');
+      const descriptionElement = document.getElementById('locations-description');
+      if (titleElement) {
+        titleElement.textContent = locationData.title || locationId;
+      }
+      if (descriptionElement) {
+        descriptionElement.textContent = locationData.description || "Détails non disponibles.";
+      }
+      if (locationData.background) {
+        const bgElement = document.getElementById('locations-background');
+        if (bgElement) {
+          bgElement.style.backgroundImage = `url('${locationData.background}')`;
+        }
+      }
+      updateLocationChoices(locationData);
+      // MàJ de l'état du jeu
+      if (window.gameState) {
+        window.gameState.previousLocation = window.gameState.currentLocation;
+        window.gameState.currentLocation = locationId;
+        if (!window.gameState.visitedLocations) {
+          window.gameState.visitedLocations = [];
+        }
+        if (!window.gameState.visitedLocations.includes(locationId)) {
+          window.gameState.visitedLocations.push(locationId);
+          updateVisitedLocationsDisplay();
+        }
+        saveGameState();
+      }
+      console.log(`Location "${locationId}" chargée avec succès`);
+    }
+    function updateLocationChoices(locationData) {
+      const choicesContainer = document.getElementById('choices-container');
+      if (!choicesContainer) return;
+      choicesContainer.innerHTML = '';
+      if (!locationData.choices || locationData.choices.length === 0) return;
+      locationData.choices.forEach(choice => {
+        const button = document.createElement('button');
+        button.className = 'choice';
+        button.textContent = choice.text;
+        // Vérifie si le choix est désactivé (requiredCharacter, requiredStat, requiredItem, etc.)
+        let isDisabled = false;
+        if (choice.requiredCharacter && window.gameState) {
+          if (window.gameState.character !== choice.requiredCharacter) {
+            isDisabled = true;
+          }
+        }
+        if (isDisabled) {
+          button.disabled = true;
+          button.classList.add('disabled');
+        } else {
+          if (choice.destination) {
+            button.onclick = () => loadLocation(choice.destination);
+          } else if (choice.action && typeof window[choice.action] === 'function') {
+            button.onclick = () => window[choice.action](choice);
+          }
+        }
+        choicesContainer.appendChild(button);
+      });
+    }
+    function updateUIFromGameState() {
+      updateCharacterDisplay();
+      updateStatsDisplay();
+      updateInventoryDisplay();
+      updateVisitedLocationsDisplay();
+    }
+    function setupUIButtons() {
+      const saveButton = document.getElementById('save-button');
+      if (saveButton) {
+        saveButton.onclick = function() {
+          const saved = saveGameState();
+          alert(saved ? "Partie sauvegardée avec succès" : "Erreur lors de la sauvegarde");
+        };
+      }
+      const loadButton = document.getElementById('load-button');
+      if (loadButton) {
+        loadButton.onclick = function() {
+          const loaded = loadGameState();
+          if (loaded) {
+            updateUIFromGameState();
+            if (window.gameState.currentLocation) {
+              loadLocation(window.gameState.currentLocation);
+            }
+            alert("Partie chargée avec succès");
+          } else {
+            alert("Erreur lors du chargement de la partie");
+          }
+        };
+      }
+      const audioButton = document.getElementById('audio-toggle');
+      if (audioButton) {
+        audioButton.onclick = function() {
+          if (typeof window.audioEnabled !== 'undefined') {
+            window.audioEnabled = !window.audioEnabled;
+            audioButton.textContent = window.audioEnabled ? 'Son' : 'Son (off)';
+            const audioElements = document.querySelectorAll('audio');
+            audioElements.forEach(audio => {
+              if (window.audioEnabled) {
+                if (audio.loop) {
+                  audio.play().catch(e => console.warn('Impossible de jouer l\'audio:', e));
+                }
+              } else {
+                audio.pause();
+              }
+            });
+          }
+        };
+      }
+      const backButton = document.getElementById('back-to-creation');
+      if (backButton) {
+        backButton.onclick = function() {
+          if (confirm("Voulez-vous vraiment revenir à l'écran de création ? Toute progression non sauvegardée sera perdue.")) {
+            window.location.href = "index-html.html";
+          }
+        };
+      }
+    }
+    function initGame() {
+  console.log("Initialisation du jeu...");
+  const stateLoaded = loadGameState();
+  if (stateLoaded) {
+    updateUIFromGameState();
+    if (window.gameState.currentLocation) {
+      loadLocation(window.gameState.currentLocation);
+    } else {
+      // Définir la location de départ en fonction du personnage choisi
+      const startLocation = (window.gameState.character === "dracula") ? "crypte-dracula" : "allee";
+      loadLocation(startLocation);
+    }
+  } else {
+    console.warn("Aucun état de jeu trouvé, redirection vers la page d'accueil");
+    window.location.href = "index-html.html";
+  }
+  setupUIButtons();
+  console.log("Initialisation du jeu terminée");
+}
+
+
+    // Fonctions d'action (exemples)
+    window.usePsiPower = function(choice) {
+      if (!window.gameState || !window.gameState.stats || window.gameState.stats.psi < 1) {
+        alert("Vous n'avez pas assez de PSI pour utiliser ce pouvoir!");
+        return;
+      }
+      window.gameState.stats.psi -= 1;
+      updateStatsDisplay();
+      if (choice && choice.text && choice.text.includes("Téléportation")) {
+        showTeleportOptions();
+      } else {
+        alert("Vous utilisez votre pouvoir PSI...");
+      }
+      saveGameState();
+    };
+    function showTeleportOptions() {
+      const destinations = [];
+      if (window.gameState && window.gameState.visitedLocations) {
+        window.gameState.visitedLocations.forEach(locationId => {
+          if (window.gameData.locations[locationId]) {
+            destinations.push({
+              id: locationId,
+              name: window.gameData.locations[locationId].title || locationId
+            });
+          }
+        });
+      }
+      if (destinations.length === 0) {
+        alert("Vous ne connaissez aucun lieu vers lequel vous téléporter.");
+        return;
+      }
+      const modal = document.createElement('div');
+      modal.style.position = 'fixed';
+      modal.style.top = '0';
+      modal.style.left = '0';
+      modal.style.width = '100%';
+      modal.style.height = '100%';
+      modal.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      modal.style.zIndex = '1000';
+      modal.style.display = 'flex';
+      modal.style.justifyContent = 'center';
+      modal.style.alignItems = 'center';
+      const content = document.createElement('div');
+      content.style.backgroundColor = '#1a0000';
+      content.style.padding = '20px';
+      content.style.borderRadius = '10px';
+      content.style.border = '2px solid #600';
+      content.style.width = '80%';
+      content.style.maxWidth = '500px';
+      content.style.maxHeight = '80vh';
+      content.style.overflowY = 'auto';
+      const title = document.createElement('h3');
+      title.textContent = 'Choisissez une destination';
+      title.style.color = '#f44';
+      title.style.marginBottom = '20px';
+      title.style.borderBottom = '1px solid #600';
+      title.style.paddingBottom = '10px';
+      content.appendChild(title);
+      destinations.forEach(dest => {
+        const button = document.createElement('button');
+        button.textContent = dest.name;
+        button.style.display = 'block';
+        button.style.width = '100%';
+        button.style.margin = '10px 0';
+        button.style.padding = '10px';
+        button.style.backgroundColor = '#400';
+        button.style.color = '#fff';
+        button.style.border = '1px solid #600';
+        button.style.borderRadius = '5px';
+        button.style.cursor = 'pointer';
+        button.style.textAlign = 'left';
+        button.onclick = function() {
+          modal.remove();
+          loadLocation(dest.id);
+        };
+        content.appendChild(button);
+      });
+      const cancelButton = document.createElement('button');
+      cancelButton.textContent = 'Annuler';
+      cancelButton.style.display = 'block';
+      cancelButton.style.width = '100%';
+      cancelButton.style.margin = '20px 0 10px';
+      cancelButton.style.padding = '10px';
+      cancelButton.style.backgroundColor = '#222';
+      cancelButton.style.color = '#ccc';
+      cancelButton.style.border = '1px solid #444';
+      cancelButton.style.borderRadius = '5px';
+      cancelButton.style.cursor = 'pointer';
+      cancelButton.onclick = function() {
+        modal.remove();
+      };
+      content.appendChild(cancelButton);
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+    }
+    window.searchSecret = function() {
+      const foundSecret = Math.random() > 0.7;
+      if (foundSecret) {
+        alert("Vous avez trouvé un passage secret!");
+        loadLocation("secret-chamber");
+      } else {
+        alert("Vous ne trouvez aucun passage secret après une recherche minutieuse.");
+      }
+    };
+    window.loadLocation = loadLocation;
+    window.updateUIFromGameState = updateUIFromGameState;
+    window.saveGameState = saveGameState;
+    window.loadGameState = loadGameState;
+
+    // Démarrage
+    initGame();
+  </script>
+</body>
+</html>
