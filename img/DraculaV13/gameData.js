@@ -5,11 +5,11 @@ window.gameData = {
 	characters: {
     dracula: {
       name: "Dracula",
-      startLocation: "crypte-dracula"
+      startLocation: "cryptedracula"
     },
     jonathan: {
       name: "Jonathan Harker",
-      startLocation: "allee-principale"
+      startLocation: "allee"
     }
   },
 	  // Lieux du jeu basés sur le livre original
